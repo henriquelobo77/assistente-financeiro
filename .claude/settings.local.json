@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm run:*)",
+      "Bash(find 'C:\\\\Users\\\\henri\\\\OneDrive\\\\Área de Trabalho\\\\trabalho\\\\dedicarmed\\\\assistente_financeiro' -type f -name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx -o -name *.py)",
+      "Bash(ssh root@5.161.116.112 \"docker ps --format ''{{.Names}}\\\\t{{.Ports}}\\\\t{{.Image}}'' 2>/dev/null | grep -i evol\")"
+    ]
+  }
+}
