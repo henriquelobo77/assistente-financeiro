@@ -6,16 +6,33 @@ const MENU_TEXT = '*Assistente Financeiro DedicarMed*\n\n' +
     '3. Contratos\n' +
     '4. Inadimplencia\n\n' +
     '_Digite o numero da opcao desejada_';
-const FLOW_MAP = {
-    '1': { flowId: 'charge', initialState: 'select_action' },
-    '2': { flowId: 'client', initialState: 'select_action' },
-    '3': { flowId: 'contract', initialState: 'select_action' },
-    '4': { flowId: 'overdue', initialState: 'select_action' },
+const SUB_MENUS = {
+    '1': {
+        flowId: 'charge',
+        initialState: 'select_action',
+        text: '*Cobrancas*\n\n1. Criar cobranca\n2. Listar cobrancas de cliente\n3. Cancelar cobranca\n0. Voltar ao menu',
+    },
+    '2': {
+        flowId: 'client',
+        initialState: 'select_action',
+        text: '*Clientes*\n\n1. Cadastrar cliente\n2. Buscar cliente\n0. Voltar ao menu',
+    },
+    '3': {
+        flowId: 'contract',
+        initialState: 'select_action',
+        text: '*Contratos*\n\n1. Criar contrato\n2. Listar contratos de cliente\n0. Voltar ao menu',
+    },
+    '4': {
+        flowId: 'overdue',
+        initialState: 'select_action',
+        text: '*Inadimplencia*\n\n1. Gerar relatorio geral\n2. Consultar por cliente\n0. Voltar ao menu',
+    },
 };
 const showMenu = async (ctx, message) => {
     const choice = message.text.trim();
-    const target = FLOW_MAP[choice];
+    const target = SUB_MENUS[choice];
     if (target) {
+        await sendText(ctx.operatorJid, target.text);
         return {
             nextState: target.initialState,
             nextFlow: target.flowId,
