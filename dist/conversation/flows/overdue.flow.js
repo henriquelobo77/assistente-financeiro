@@ -9,8 +9,30 @@ const selectAction = async (ctx, message) => {
         '0. Voltar ao menu';
     const choice = message.text.trim();
     switch (choice) {
-        case '1':
-            return { nextState: 'report_general' };
+        case '1': {
+            await sendText(ctx.operatorJid, 'Gerando relatorio de inadimplencia, aguarde...');
+            const result = await overdueService.getOverdueReport();
+            if (!result.ok) {
+                await sendText(ctx.operatorJid, `Erro ao gerar relatorio: ${result.error.message}`);
+                return END_FLOW;
+            }
+            const report = result.value;
+            if (report.totalCount === 0) {
+                await sendText(ctx.operatorJid, '*Relatorio de Inadimplencia*\n\nNenhuma cobranca em atraso!');
+                return END_FLOW;
+            }
+            const topList = report.charges
+                .slice(0, 10)
+                .map((c, i) => `${i + 1}. ${c.customerName ?? c.customerId}\n` +
+                `   Valor: ${formatBRL(c.value)} | Venc: ${formatDate(c.dueDate)}`)
+                .join('\n');
+            const msg = `*Relatorio de Inadimplencia*\n\n` +
+                `Total em atraso: *${formatBRL(report.totalAmountCents)}*\n` +
+                `Quantidade: *${report.totalCount}* cobrancas\n\n` +
+                `*Top ${Math.min(10, report.charges.length)} maiores:*\n${topList}`;
+            await sendText(ctx.operatorJid, msg);
+            return END_FLOW;
+        }
         case '2':
             await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente:');
             return { nextState: 'report_by_client' };
