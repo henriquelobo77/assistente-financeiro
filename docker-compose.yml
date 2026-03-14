@@ -3,7 +3,21 @@ services:
     build: .
     ports:
       - "3000:3000"
-    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - EVOLUTION_INSTANCE=${EVOLUTION_INSTANCE}
+      - ASAAS_API_URL=${ASAAS_API_URL}
+      - ASAAS_API_KEY=${ASAAS_API_KEY}
+      - AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
+      - AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}
+      - AIRTABLE_CLIENTS_TABLE=${AIRTABLE_CLIENTS_TABLE:-Clients}
+      - AIRTABLE_CONTRACTS_TABLE=${AIRTABLE_CONTRACTS_TABLE:-Contracts}
+      - ALLOWED_OPERATORS=${ALLOWED_OPERATORS}
+      - SESSION_TTL_MINUTES=${SESSION_TTL_MINUTES:-30}
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
