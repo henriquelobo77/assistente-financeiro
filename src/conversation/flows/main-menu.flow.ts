@@ -1,5 +1,5 @@
 import type { FlowDefinition, StateHandler } from '../machine.js';
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 
 const MENU_TEXT =
   '*Assistente Financeiro DedicarMed*\n\n' +

@@ -2,14 +2,13 @@ import axios, { type AxiosInstance } from 'axios';
 import { env } from '../config/env.js';
 import { createChildLogger } from '../shared/logger.js';
 
-const log = createChildLogger('evolution-client');
+const log = createChildLogger('telegram-client');
 
-function createEvolutionClient(): AxiosInstance {
+function createTelegramClient(): AxiosInstance {
   const client = axios.create({
-    baseURL: env.EVOLUTION_API_URL ?? 'http://localhost:8080',
-    timeout: 15000,
+    baseURL: `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/`,
+    timeout: 35000,
     headers: {
-      apikey: env.EVOLUTION_API_KEY ?? '',
       'Content-Type': 'application/json',
     },
   });
@@ -23,7 +22,7 @@ function createEvolutionClient(): AxiosInstance {
           url: error.config?.url,
           data: error.response?.data,
         },
-        'Evolution API error',
+        'Telegram API error',
       );
       throw error;
     },
@@ -32,5 +31,4 @@ function createEvolutionClient(): AxiosInstance {
   return client;
 }
 
-export const evolutionClient = createEvolutionClient();
-export const instanceName = env.EVOLUTION_INSTANCE ?? 'default';
+export const telegramClient = createTelegramClient();

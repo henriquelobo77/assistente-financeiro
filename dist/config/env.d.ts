@@ -14,10 +14,11 @@ declare const envSchema: z.ZodObject<{
         debug: "debug";
         trace: "trace";
     }>>;
-    EVOLUTION_API_URL: z.ZodURL;
-    EVOLUTION_API_KEY: z.ZodString;
-    EVOLUTION_INSTANCE: z.ZodString;
+    EVOLUTION_API_URL: z.ZodOptional<z.ZodURL>;
+    EVOLUTION_API_KEY: z.ZodOptional<z.ZodString>;
+    EVOLUTION_INSTANCE: z.ZodOptional<z.ZodString>;
     EVOLUTION_WEBHOOK_SECRET: z.ZodOptional<z.ZodString>;
+    TELEGRAM_BOT_TOKEN: z.ZodString;
     ASAAS_API_URL: z.ZodURL;
     ASAAS_API_KEY: z.ZodString;
     AIRTABLE_API_KEY: z.ZodString;
@@ -32,9 +33,7 @@ export declare const env: {
     NODE_ENV: "development" | "production" | "test";
     PORT: number;
     LOG_LEVEL: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
-    EVOLUTION_API_URL: string;
-    EVOLUTION_API_KEY: string;
-    EVOLUTION_INSTANCE: string;
+    TELEGRAM_BOT_TOKEN: string;
     ASAAS_API_URL: string;
     ASAAS_API_KEY: string;
     AIRTABLE_API_KEY: string;
@@ -43,6 +42,9 @@ export declare const env: {
     AIRTABLE_CONTRACTS_TABLE: string;
     ALLOWED_OPERATORS: string;
     SESSION_TTL_MINUTES: number;
+    EVOLUTION_API_URL?: string | undefined;
+    EVOLUTION_API_KEY?: string | undefined;
+    EVOLUTION_INSTANCE?: string | undefined;
     EVOLUTION_WEBHOOK_SECRET?: string | undefined;
 };
 export declare function getAllowedOperators(): string[];

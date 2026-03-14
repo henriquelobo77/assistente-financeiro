@@ -7,10 +7,12 @@ const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
 
-  EVOLUTION_API_URL: z.url(),
-  EVOLUTION_API_KEY: z.string().min(1),
-  EVOLUTION_INSTANCE: z.string().min(1),
+  EVOLUTION_API_URL: z.url().optional(),
+  EVOLUTION_API_KEY: z.string().min(1).optional(),
+  EVOLUTION_INSTANCE: z.string().min(1).optional(),
   EVOLUTION_WEBHOOK_SECRET: z.string().optional(),
+
+  TELEGRAM_BOT_TOKEN: z.string().min(1),
 
   ASAAS_API_URL: z.url(),
   ASAAS_API_KEY: z.string().min(1),

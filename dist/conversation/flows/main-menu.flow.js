@@ -1,4 +1,4 @@
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 const MENU_TEXT = '*Assistente Financeiro DedicarMed*\n\n' +
     'Escolha uma opcao:\n\n' +
     '1. Cobrancas\n' +

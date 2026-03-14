@@ -3,6 +3,7 @@ import { logger } from './shared/logger.js';
 import { buildApp } from './server/app.js';
 import { registerFlow } from './conversation/router.js';
 import { cleanExpiredSessions } from './conversation/session.store.js';
+import { startPolling, stopPolling } from './telegram/polling.js';
 // Import flows
 import { mainMenuFlow } from './conversation/flows/main-menu.flow.js';
 import { chargeFlow } from './conversation/flows/charge.flow.js';
@@ -16,15 +17,19 @@ async function main() {
     registerFlow(clientFlow);
     registerFlow(contractFlow);
     registerFlow(overdueFlow);
-    // Build and start HTTP server
+    // Build and start HTTP server (keeps /health endpoint available)
     const app = await buildApp();
     await app.listen({ port: env.PORT, host: '0.0.0.0' });
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
+    // Start Telegram long-polling
+    startPolling();
+    logger.info('Telegram polling started');
     // Periodic session cleanup (every 5 minutes)
     const cleanupInterval = setInterval(cleanExpiredSessions, 5 * 60 * 1000);
     // Graceful shutdown
     const shutdown = async (signal) => {
         logger.info({ signal }, 'Shutting down');
+        stopPolling();
         clearInterval(cleanupInterval);
         await app.close();
         process.exit(0);

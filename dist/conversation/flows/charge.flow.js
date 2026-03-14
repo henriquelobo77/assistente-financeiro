@@ -1,5 +1,5 @@
 import { END_FLOW } from '../machine.js';
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 import { parseBRL, formatBRL, parseDate, formatDate, formatCpfCnpj } from '../../shared/formatters.js';
 import * as chargeService from '../../services/charge.service.js';
 import * as clientService from '../../services/client.service.js';

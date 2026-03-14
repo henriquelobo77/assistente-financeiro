@@ -1,6 +1,6 @@
 import type { FlowDefinition, StateHandler } from '../machine.js';
 import { END_FLOW } from '../machine.js';
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 import { parseBRL, formatBRL, parseDate, formatDate, formatCpfCnpj } from '../../shared/formatters.js';
 import type { BillingType } from '../../types/charge.types.js';
 import * as chargeService from '../../services/charge.service.js';

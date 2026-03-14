@@ -1,5 +1,5 @@
 import { END_FLOW } from '../machine.js';
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 import { formatBRL, formatDate } from '../../shared/formatters.js';
 import * as overdueService from '../../services/overdue.service.js';
 const selectAction = async (ctx, message) => {

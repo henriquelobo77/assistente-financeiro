@@ -1,6 +1,6 @@
 import type { FlowDefinition, StateHandler } from '../machine.js';
 import { END_FLOW } from '../machine.js';
-import { sendText } from '../../whatsapp/message.sender.js';
+import { sendText } from '../../telegram/message.sender.js';
 import { isValidCpfCnpj, formatCpfCnpj } from '../../shared/formatters.js';
 import * as clientService from '../../services/client.service.js';
 

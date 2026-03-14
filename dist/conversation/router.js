@@ -2,7 +2,7 @@ import { processMessage, END_FLOW, applyTransition } from './machine.js';
 import { getOrCreateSession, saveSession } from './session.store.js';
 import { isOperatorAllowed } from '../auth/operator.guard.js';
 import { createChildLogger } from '../shared/logger.js';
-import { sendText } from '../whatsapp/message.sender.js';
+import { sendText } from '../telegram/message.sender.js';
 const log = createChildLogger('router');
 const GLOBAL_COMMANDS = ['menu', '0', 'cancelar', 'ajuda'];
 const flows = new Map();
