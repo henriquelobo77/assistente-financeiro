@@ -2,39 +2,44 @@ import { END_FLOW } from '../machine.js';
 import { sendText } from '../../telegram/message.sender.js';
 import { isValidCpfCnpj, formatCpfCnpj } from '../../shared/formatters.js';
 import * as clientService from '../../services/client.service.js';
+const CLIENT_MENU = '*Clientes*\n\n' +
+    '1. Cadastrar cliente\n' +
+    '2. Buscar cliente\n' +
+    '0. Voltar ao menu';
 const selectAction = async (ctx, message) => {
-    const MENU = '*Clientes*\n\n' +
-        '1. Cadastrar cliente\n' +
-        '2. Buscar cliente\n' +
-        '0. Voltar ao menu';
     const choice = message.text.trim();
     switch (choice) {
         case '1':
-            await sendText(ctx.operatorJid, 'Informe o *nome completo* do cliente:');
+            await sendText(ctx.operatorJid, 'Informe o *nome completo* do cliente (ou *0* para voltar):');
             return { nextState: 'create_name', updatedData: {} };
         case '2':
-            await sendText(ctx.operatorJid, 'Informe nome, CPF/CNPJ ou email do cliente:');
+            await sendText(ctx.operatorJid, 'Informe nome, CPF/CNPJ ou email do cliente (ou *0* para voltar):');
             return { nextState: 'search_client' };
         case '0':
             return END_FLOW;
         default:
-            await sendText(ctx.operatorJid, MENU);
+            await sendText(ctx.operatorJid, CLIENT_MENU);
             return { nextState: 'select_action' };
     }
 };
 const createName = async (ctx, message) => {
     const name = message.text.trim();
+    if (name === '0')
+        return END_FLOW;
     if (name.length < 3) {
-        await sendText(ctx.operatorJid, 'Nome muito curto. Informe o nome completo:');
+        await sendText(ctx.operatorJid, 'Nome muito curto. Informe o nome completo (ou *0* para voltar):');
         return { nextState: 'create_name' };
     }
-    await sendText(ctx.operatorJid, 'Informe o *CPF ou CNPJ* (somente numeros):');
+    await sendText(ctx.operatorJid, 'Informe o *CPF ou CNPJ* (somente numeros) ou *0* para voltar:');
     return { nextState: 'create_cpf', updatedData: { ...ctx.data, name } };
 };
 const createCpf = async (ctx, message) => {
-    const cpfCnpj = message.text.replace(/\D/g, '');
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const cpfCnpj = input.replace(/\D/g, '');
     if (!isValidCpfCnpj(cpfCnpj)) {
-        await sendText(ctx.operatorJid, 'CPF/CNPJ invalido. Informe 11 (CPF) ou 14 (CNPJ) digitos:');
+        await sendText(ctx.operatorJid, 'CPF/CNPJ invalido. Informe 11 (CPF) ou 14 (CNPJ) digitos (ou *0* para voltar):');
         return { nextState: 'create_cpf' };
     }
     await sendText(ctx.operatorJid, 'Informe o *email* (ou *pular*):');
@@ -42,12 +47,16 @@ const createCpf = async (ctx, message) => {
 };
 const createEmail = async (ctx, message) => {
     const text = message.text.trim();
+    if (text === '0')
+        return END_FLOW;
     const email = text.toLowerCase() === 'pular' ? undefined : text;
     await sendText(ctx.operatorJid, 'Informe o *telefone* com DDD (ou *pular*):');
     return { nextState: 'create_phone', updatedData: { ...ctx.data, email } };
 };
 const createPhone = async (ctx, message) => {
     const text = message.text.trim();
+    if (text === '0')
+        return END_FLOW;
     const phone = text.toLowerCase() === 'pular' ? undefined : text.replace(/\D/g, '');
     const data = { ...ctx.data, phone };
     const summary = '*Confirma o cadastro?*\n\n' +
@@ -85,6 +94,8 @@ const createConfirm = async (ctx, message) => {
 };
 const searchClient = async (ctx, message) => {
     const query = message.text.trim();
+    if (query === '0')
+        return END_FLOW;
     await sendText(ctx.operatorJid, `Buscando "${query}"...`);
     const result = await clientService.searchClients(query);
     if (!result.ok) {

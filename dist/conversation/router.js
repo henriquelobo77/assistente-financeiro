@@ -3,8 +3,8 @@ import { getOrCreateSession, saveSession } from './session.store.js';
 import { isOperatorAllowed } from '../auth/operator.guard.js';
 import { createChildLogger } from '../shared/logger.js';
 import { sendText } from '../telegram/message.sender.js';
+import { MENU_TEXT } from './flows/main-menu.flow.js';
 const log = createChildLogger('router');
-const GLOBAL_COMMANDS = ['menu', '0', 'cancelar', 'ajuda'];
 const flows = new Map();
 export function registerFlow(flow) {
     flows.set(flow.id, flow);
@@ -24,13 +24,23 @@ export async function handleIncomingMessage(message) {
             '- *ajuda* - Mostrar esta mensagem');
         return;
     }
+    // Global "menu" / "cancelar" — reset to idle, then show main menu
     if ((lowerText === 'menu' || lowerText === 'cancelar') && ctx.flowId) {
         ctx = applyTransition(ctx, END_FLOW);
         saveSession(ctx);
+        await sendText(message.jid, MENU_TEXT);
+        return;
     }
     try {
         const updatedCtx = await processMessage(ctx, message, flows, log);
         saveSession(updatedCtx);
+        // After processing, if we ended up idle (END_FLOW), show the main menu
+        // so the user always has a prompt to act on.
+        // Skip if we were already idle before processing (main-menu handler
+        // already sent either the menu or the sub-menu text).
+        if (!updatedCtx.flowId && updatedCtx.stateId === 'idle' && ctx.flowId) {
+            await sendText(message.jid, MENU_TEXT);
+        }
     }
     catch (error) {
         log.error({ error, jid: message.jid, flowId: ctx.flowId, stateId: ctx.stateId }, 'Error processing message');

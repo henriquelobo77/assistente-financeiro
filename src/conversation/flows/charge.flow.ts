@@ -6,36 +6,39 @@ import type { BillingType } from '../../types/charge.types.js';
 import * as chargeService from '../../services/charge.service.js';
 import * as clientService from '../../services/client.service.js';
 
-const selectAction: StateHandler = async (ctx, message) => {
-  const MENU =
-    '*Cobrancas*\n\n' +
-    '1. Criar cobranca\n' +
-    '2. Listar cobrancas de cliente\n' +
-    '3. Cancelar cobranca\n' +
-    '0. Voltar ao menu';
+const CHARGE_MENU =
+  '*Cobrancas*\n\n' +
+  '1. Criar cobranca\n' +
+  '2. Listar cobrancas de cliente\n' +
+  '3. Cancelar cobranca\n' +
+  '0. Voltar ao menu';
 
+const selectAction: StateHandler = async (ctx, message) => {
   const choice = message.text.trim();
 
   switch (choice) {
     case '1':
-      await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente:');
-      return { nextState: 'create_search_client' };
+      await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente (ou *0* para voltar):');
+      return { nextState: 'create_search_client', updatedData: {} };
     case '2':
-      await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente:');
+      await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente (ou *0* para voltar):');
       return { nextState: 'list_search_client' };
     case '3':
-      await sendText(ctx.operatorJid, 'Informe o ID da cobranca (ex: pay_xxxx):');
+      await sendText(ctx.operatorJid, 'Informe o ID da cobranca (ex: pay_xxxx) ou *0* para voltar:');
       return { nextState: 'cancel_charge_id' };
     case '0':
       return END_FLOW;
     default:
-      await sendText(ctx.operatorJid, MENU);
+      await sendText(ctx.operatorJid, CHARGE_MENU);
       return { nextState: 'select_action' };
   }
 };
 
+/* ── Create charge: search client ── */
+
 const createSearchClient: StateHandler = async (ctx, message) => {
   const input = message.text.trim();
+  if (input === '0') return END_FLOW;
 
   const result = await clientService.searchClients(input);
   if (!result.ok) {
@@ -52,7 +55,7 @@ const createSearchClient: StateHandler = async (ctx, message) => {
     const client = result.value[0]!;
     await sendText(
       ctx.operatorJid,
-      `Cliente encontrado: *${client.name}* (${formatCpfCnpj(client.cpfCnpj)})\n\nInforme o valor da cobranca (ex: 150,00):`,
+      `Cliente encontrado: *${client.name}* (${formatCpfCnpj(client.cpfCnpj)})\n\nInforme o valor da cobranca (ex: 150,00) ou *0* para voltar:`,
     );
     return {
       nextState: 'create_value',
@@ -60,13 +63,12 @@ const createSearchClient: StateHandler = async (ctx, message) => {
     };
   }
 
-  // Multiple results - let operator choose
   const list = result.value
     .slice(0, 5)
     .map((c, i) => `${i + 1}. ${c.name} - ${formatCpfCnpj(c.cpfCnpj)}`)
     .join('\n');
 
-  await sendText(ctx.operatorJid, `Clientes encontrados:\n\n${list}\n\nDigite o numero para selecionar:`);
+  await sendText(ctx.operatorJid, `Clientes encontrados:\n\n${list}\n\nDigite o numero para selecionar ou *0* para voltar:`);
   return {
     nextState: 'create_select_client',
     updatedData: { ...ctx.data, searchResults: result.value.slice(0, 5) },
@@ -74,16 +76,19 @@ const createSearchClient: StateHandler = async (ctx, message) => {
 };
 
 const createSelectClient: StateHandler = async (ctx, message) => {
-  const choice = parseInt(message.text.trim(), 10);
+  const input = message.text.trim();
+  if (input === '0') return END_FLOW;
+
+  const choice = parseInt(input, 10);
   const results = ctx.data.searchResults as Array<{ asaasId: string; name: string; cpfCnpj: string }>;
 
   if (isNaN(choice) || choice < 1 || choice > results.length) {
-    await sendText(ctx.operatorJid, `Opcao invalida. Digite de 1 a ${results.length}:`);
+    await sendText(ctx.operatorJid, `Opcao invalida. Digite de 1 a ${results.length} ou *0* para voltar:`);
     return { nextState: 'create_select_client' };
   }
 
   const client = results[choice - 1]!;
-  await sendText(ctx.operatorJid, `Cliente: *${client.name}*\n\nInforme o valor da cobranca (ex: 150,00):`);
+  await sendText(ctx.operatorJid, `Cliente: *${client.name}*\n\nInforme o valor da cobranca (ex: 150,00) ou *0* para voltar:`);
   return {
     nextState: 'create_value',
     updatedData: { ...ctx.data, customerId: client.asaasId, customerName: client.name, searchResults: undefined },
@@ -91,13 +96,16 @@ const createSelectClient: StateHandler = async (ctx, message) => {
 };
 
 const createValue: StateHandler = async (ctx, message) => {
-  const valueInCents = parseBRL(message.text);
+  const input = message.text.trim();
+  if (input === '0') return END_FLOW;
+
+  const valueInCents = parseBRL(input);
   if (!valueInCents) {
-    await sendText(ctx.operatorJid, 'Valor invalido. Informe no formato: 150,00');
+    await sendText(ctx.operatorJid, 'Valor invalido. Informe no formato: 150,00 (ou *0* para voltar)');
     return { nextState: 'create_value' };
   }
 
-  await sendText(ctx.operatorJid, 'Informe a data de vencimento (DD/MM/AAAA):');
+  await sendText(ctx.operatorJid, 'Informe a data de vencimento (DD/MM/AAAA) ou *0* para voltar:');
   return {
     nextState: 'create_due_date',
     updatedData: { ...ctx.data, value: valueInCents },
@@ -105,15 +113,18 @@ const createValue: StateHandler = async (ctx, message) => {
 };
 
 const createDueDate: StateHandler = async (ctx, message) => {
-  const isoDate = parseDate(message.text);
+  const input = message.text.trim();
+  if (input === '0') return END_FLOW;
+
+  const isoDate = parseDate(input);
   if (!isoDate) {
-    await sendText(ctx.operatorJid, 'Data invalida. Use o formato DD/MM/AAAA (ex: 15/04/2026):');
+    await sendText(ctx.operatorJid, 'Data invalida. Use o formato DD/MM/AAAA (ex: 15/04/2026) ou *0* para voltar:');
     return { nextState: 'create_due_date' };
   }
 
   await sendText(
     ctx.operatorJid,
-    'Forma de pagamento:\n\n1. Boleto\n2. PIX\n3. Cartao de credito',
+    'Forma de pagamento:\n\n1. Boleto\n2. PIX\n3. Cartao de credito\n0. Voltar ao menu',
   );
   return {
     nextState: 'create_billing_type',
@@ -134,9 +145,12 @@ const BILLING_LABELS: Record<string, string> = {
 };
 
 const createBillingType: StateHandler = async (ctx, message) => {
-  const billingType = BILLING_MAP[message.text.trim()];
+  const input = message.text.trim();
+  if (input === '0') return END_FLOW;
+
+  const billingType = BILLING_MAP[input];
   if (!billingType) {
-    await sendText(ctx.operatorJid, 'Opcao invalida. Digite 1, 2 ou 3.');
+    await sendText(ctx.operatorJid, 'Opcao invalida. Digite 1, 2 ou 3 (ou *0* para voltar):');
     return { nextState: 'create_billing_type' };
   }
 
@@ -148,7 +162,10 @@ const createBillingType: StateHandler = async (ctx, message) => {
 };
 
 const createDescription: StateHandler = async (ctx, message) => {
-  const desc = message.text.trim().toLowerCase() === 'pular' ? undefined : message.text.trim();
+  const text = message.text.trim();
+  if (text === '0') return END_FLOW;
+
+  const desc = text.toLowerCase() === 'pular' ? undefined : text;
   const data: Record<string, unknown> = { ...ctx.data, description: desc };
 
   const value = data.value as number;
@@ -207,13 +224,16 @@ const createConfirm: StateHandler = async (ctx, message) => {
   return END_FLOW;
 };
 
+/* ── List charges ── */
+
 const listSearchClient: StateHandler = async (ctx, message) => {
   const input = message.text.trim();
+  if (input === '0') return END_FLOW;
 
   const clientResult = await clientService.searchClients(input);
   if (!clientResult.ok || clientResult.value.length === 0) {
-    await sendText(ctx.operatorJid, 'Cliente nao encontrado. Verifique os dados e tente novamente.');
-    return END_FLOW;
+    await sendText(ctx.operatorJid, 'Cliente nao encontrado. Verifique os dados e tente novamente ou *0* para voltar.');
+    return { nextState: 'list_search_client' };
   }
 
   const client = clientResult.value[0]!;
@@ -247,11 +267,14 @@ const listSearchClient: StateHandler = async (ctx, message) => {
   return END_FLOW;
 };
 
+/* ── Cancel charge ── */
+
 const cancelChargeId: StateHandler = async (ctx, message) => {
   const chargeId = message.text.trim();
+  if (chargeId === '0') return END_FLOW;
 
   if (!chargeId.startsWith('pay_')) {
-    await sendText(ctx.operatorJid, 'ID invalido. O ID da cobranca deve comecar com "pay_".\nTente novamente ou digite *0* para voltar.');
+    await sendText(ctx.operatorJid, 'ID invalido. O ID da cobranca deve comecar com "pay\\_".\nTente novamente ou digite *0* para voltar.');
     return { nextState: 'cancel_charge_id' };
   }
 

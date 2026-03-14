@@ -3,28 +3,30 @@ import { sendText } from '../../telegram/message.sender.js';
 import { parseBRL, formatBRL, parseDate, formatDate, formatCpfCnpj } from '../../shared/formatters.js';
 import * as contractService from '../../services/contract.service.js';
 import * as clientService from '../../services/client.service.js';
+const CONTRACT_MENU = '*Contratos*\n\n' +
+    '1. Criar contrato\n' +
+    '2. Listar contratos de cliente\n' +
+    '0. Voltar ao menu';
 const selectAction = async (ctx, message) => {
-    const MENU = '*Contratos*\n\n' +
-        '1. Criar contrato\n' +
-        '2. Listar contratos de cliente\n' +
-        '0. Voltar ao menu';
     const choice = message.text.trim();
     switch (choice) {
         case '1':
-            await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente:');
+            await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente (ou *0* para voltar):');
             return { nextState: 'create_search_client', updatedData: {} };
         case '2':
-            await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente:');
+            await sendText(ctx.operatorJid, 'Informe o CPF/CNPJ ou nome do cliente (ou *0* para voltar):');
             return { nextState: 'list_contracts' };
         case '0':
             return END_FLOW;
         default:
-            await sendText(ctx.operatorJid, MENU);
+            await sendText(ctx.operatorJid, CONTRACT_MENU);
             return { nextState: 'select_action' };
     }
 };
 const createSearchClient = async (ctx, message) => {
     const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
     const result = await clientService.searchClients(input);
     if (!result.ok) {
         await sendText(ctx.operatorJid, `Erro ao buscar cliente: ${result.error.message}\nTente novamente ou *0* para voltar.`);
@@ -36,7 +38,7 @@ const createSearchClient = async (ctx, message) => {
     }
     if (result.value.length === 1) {
         const client = result.value[0];
-        await sendText(ctx.operatorJid, `Cliente: *${client.name}* (${formatCpfCnpj(client.cpfCnpj)})\n\nInforme o valor mensal do contrato (ex: 1500,00):`);
+        await sendText(ctx.operatorJid, `Cliente: *${client.name}* (${formatCpfCnpj(client.cpfCnpj)})\n\nInforme o valor mensal do contrato (ex: 1500,00) ou *0* para voltar:`);
         return {
             nextState: 'create_value',
             updatedData: { ...ctx.data, clientAsaasId: client.asaasId, clientName: client.name },
@@ -46,51 +48,63 @@ const createSearchClient = async (ctx, message) => {
         .slice(0, 5)
         .map((c, i) => `${i + 1}. ${c.name} - ${formatCpfCnpj(c.cpfCnpj)}`)
         .join('\n');
-    await sendText(ctx.operatorJid, `Clientes encontrados:\n\n${list}\n\nDigite o numero para selecionar:`);
+    await sendText(ctx.operatorJid, `Clientes encontrados:\n\n${list}\n\nDigite o numero para selecionar ou *0* para voltar:`);
     return {
         nextState: 'create_select_client',
         updatedData: { ...ctx.data, searchResults: result.value.slice(0, 5) },
     };
 };
 const createSelectClient = async (ctx, message) => {
-    const choice = parseInt(message.text.trim(), 10);
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const choice = parseInt(input, 10);
     const results = ctx.data.searchResults;
     if (isNaN(choice) || choice < 1 || choice > results.length) {
-        await sendText(ctx.operatorJid, `Opcao invalida. Digite de 1 a ${results.length}:`);
+        await sendText(ctx.operatorJid, `Opcao invalida. Digite de 1 a ${results.length} ou *0* para voltar:`);
         return { nextState: 'create_select_client' };
     }
     const client = results[choice - 1];
-    await sendText(ctx.operatorJid, `Cliente: *${client.name}*\n\nInforme o valor mensal do contrato (ex: 1500,00):`);
+    await sendText(ctx.operatorJid, `Cliente: *${client.name}*\n\nInforme o valor mensal do contrato (ex: 1500,00) ou *0* para voltar:`);
     return {
         nextState: 'create_value',
         updatedData: { ...ctx.data, clientAsaasId: client.asaasId, clientName: client.name, searchResults: undefined },
     };
 };
 const createValue = async (ctx, message) => {
-    const value = parseBRL(message.text);
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const value = parseBRL(input);
     if (!value) {
-        await sendText(ctx.operatorJid, 'Valor invalido. Informe no formato: 1500,00');
+        await sendText(ctx.operatorJid, 'Valor invalido. Informe no formato: 1500,00 (ou *0* para voltar):');
         return { nextState: 'create_value' };
     }
-    await sendText(ctx.operatorJid, 'Data de inicio (DD/MM/AAAA):');
+    await sendText(ctx.operatorJid, 'Data de inicio (DD/MM/AAAA) ou *0* para voltar:');
     return { nextState: 'create_start_date', updatedData: { ...ctx.data, value } };
 };
 const createStartDate = async (ctx, message) => {
-    const date = parseDate(message.text);
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const date = parseDate(input);
     if (!date) {
-        await sendText(ctx.operatorJid, 'Data invalida. Use DD/MM/AAAA:');
+        await sendText(ctx.operatorJid, 'Data invalida. Use DD/MM/AAAA (ou *0* para voltar):');
         return { nextState: 'create_start_date' };
     }
-    await sendText(ctx.operatorJid, 'Data de fim (DD/MM/AAAA):');
+    await sendText(ctx.operatorJid, 'Data de fim (DD/MM/AAAA) ou *0* para voltar:');
     return { nextState: 'create_end_date', updatedData: { ...ctx.data, startDate: date } };
 };
 const createEndDate = async (ctx, message) => {
-    const date = parseDate(message.text);
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const date = parseDate(input);
     if (!date) {
-        await sendText(ctx.operatorJid, 'Data invalida. Use DD/MM/AAAA:');
+        await sendText(ctx.operatorJid, 'Data invalida. Use DD/MM/AAAA (ou *0* para voltar):');
         return { nextState: 'create_end_date' };
     }
-    await sendText(ctx.operatorJid, 'Recorrencia:\n\n1. Mensal\n2. Trimestral\n3. Semestral\n4. Anual');
+    await sendText(ctx.operatorJid, 'Recorrencia:\n\n1. Mensal\n2. Trimestral\n3. Semestral\n4. Anual\n0. Voltar ao menu');
     return { nextState: 'create_recurrence', updatedData: { ...ctx.data, endDate: date } };
 };
 const RECURRENCE_MAP = {
@@ -106,9 +120,12 @@ const RECURRENCE_LABELS = {
     annual: 'Anual',
 };
 const createRecurrence = async (ctx, message) => {
-    const recurrence = RECURRENCE_MAP[message.text.trim()];
+    const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
+    const recurrence = RECURRENCE_MAP[input];
     if (!recurrence) {
-        await sendText(ctx.operatorJid, 'Opcao invalida. Digite 1, 2, 3 ou 4.');
+        await sendText(ctx.operatorJid, 'Opcao invalida. Digite 1, 2, 3 ou 4 (ou *0* para voltar):');
         return { nextState: 'create_recurrence' };
     }
     const data = { ...ctx.data, recurrence };
@@ -154,10 +171,12 @@ const createConfirm = async (ctx, message) => {
 };
 const listContracts = async (ctx, message) => {
     const input = message.text.trim();
+    if (input === '0')
+        return END_FLOW;
     const clientResult = await clientService.searchClients(input);
     if (!clientResult.ok || clientResult.value.length === 0) {
-        await sendText(ctx.operatorJid, 'Cliente nao encontrado.');
-        return END_FLOW;
+        await sendText(ctx.operatorJid, 'Cliente nao encontrado. Tente novamente ou *0* para voltar.');
+        return { nextState: 'list_contracts' };
     }
     const client = clientResult.value[0];
     await sendText(ctx.operatorJid, `Buscando contratos de *${client.name}*...`);
